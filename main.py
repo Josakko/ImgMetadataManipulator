@@ -5,10 +5,11 @@ from prettytable import PrettyTable
 import pyexiv2
 import csv
 import folium
+import piexif
 from colorama import Fore, Style
 
 
-#Remove
+# Remove
 def remove_metadata():
     def remove(img):
         image = Image.open(img)
@@ -55,11 +56,11 @@ def remove_metadata():
         print(Fore.GREEN +"> Saving clean image..."+ Style.RESET_ALL)
         cl_img.save('clean-' + img)
     
-    img = input("> Enter the image to remove metadata from:")
+    img = input("> Enter the image to remove metadata from: ")
     remove(img)
 
 
-#Extract
+# Extract
 def extract_metadata():
     def extract(img):
         metadata = {}
@@ -134,10 +135,62 @@ def extract_metadata():
     else:
         print(Fore.BLUE +"[-] Metadata was not saved to CSV file"+ Style.RESET_ALL)  
         
+# Edit
+def edit_metadata():
+    def extract(img):
+        try:
+            exif_dict = piexif.load(img)
+            with open(f"{img}-metadata.csv", "w", newline="") as f:
+                writer = csv.writer(f)
+                for ifd in ("0th", "Exif", "GPS", "1st"):
+                    for tag in exif_dict[ifd]:
+                        tag_name = piexif.TAGS[ifd][tag]["name"]
+                        tag_value = exif_dict[ifd][tag]
+                        writer.writerow([ifd, tag, tag_name, tag_value])
+            print(Fore.GREEN +"[+] Metadata extracted successfully"+ Style.RESET_ALL)
+        except:
+            print(Fore.RED +"[-] Metadata not found in the image"+ Style.RESET_ALL)
+
+    def load(img):
+        try:
+            exif_dict = piexif.load(img)
+            with open(f"{img}-metadata.csv", "r", newline="") as f:
+                reader = csv.reader(f)
+                exif_dict = {"0th": {}, "Exif": {}, "GPS": {}, "1st": {}}
+                for row in reader:
+                    ifd = row[0]
+                    tag = int(row[1])
+                    tag_value = eval(row[3])
+                    exif_dict[ifd][tag] = tag_value
+            exif_bytes = piexif.dump(exif_dict)
+            piexif.insert(exif_bytes, img)
+            print(Fore.GREEN +"[+] Metadata loaded successfully"+ Style.RESET_ALL)
+        except:
+            print(Fore.RED +"[-] Metadata could not be loaded to the image"+ Style.RESET_ALL)
+
+    print(Fore.BLUE +"1. Extract Metadata from image to editable format"+ Style.RESET_ALL)
+    print(Fore.BLUE +"2. Load Metadata in image"+ Style.RESET_ALL)
+    print(Fore.BLUE +"3. Exit"+ Style.RESET_ALL)
+
+    choice = input("> Select operation: ")
+
+    if choice == "1":
+        img = input("> Enter image file to edit: ")
+        extract(img)
+    elif choice == "2":
+        img = input("> Enter image file to edit: ")
+        load(img)
+    elif choice == "3":
+        exit()
+    else:
+        print(Fore.RED +"Choice incorrect"+ Style.RESET_ALL)
+
+        
 #Choices
 print(Fore.BLUE +"1. Remove Metadata from image"+ Style.RESET_ALL)
 print(Fore.BLUE +"2. Extract Metadata from image"+ Style.RESET_ALL)
-print(Fore.BLUE +"3. Exit"+ Style.RESET_ALL)
+print(Fore.BLUE +"3. Edit metadata in image"+ Style.RESET_ALL)
+print(Fore.BLUE +"4. Exit"+ Style.RESET_ALL)
 
 choice = input("> Select operation: ")
 
@@ -146,6 +199,8 @@ if choice == "1":
 elif choice == "2":
     extract_metadata()
 elif choice == "3":
+    edit_metadata()
+elif choice == "4":
     exit()
 else:
     print(Fore.RED +"Choice incorrect"+ Style.RESET_ALL)
