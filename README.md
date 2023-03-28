@@ -1,6 +1,6 @@
 # ImgMetadataManipulator
 
-Image metadata manipulator tool made in python
+Image metadata manipulator tool made in python that extracts or removes metadata from image
 
 # Usage
 
